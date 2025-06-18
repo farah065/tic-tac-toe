@@ -16,7 +16,7 @@ public class MenuManager : MonoBehaviour
     [SerializeField] private GameObject serverButtonPrefab;
 
     Vector2 scrollViewPos = Vector2.zero;
-    readonly Dictionary<long, ServerResponse> discoveredServers = new Dictionary<long, ServerResponse>();
+    readonly Dictionary<long, DiscoveryResponse> discoveredServers = new Dictionary<long, DiscoveryResponse>();
 
     private void Awake()
     {
@@ -102,13 +102,13 @@ public class MenuManager : MonoBehaviour
             Destroy(child.gameObject);
         }
         // Create a button for each discovered server
-        foreach (ServerResponse info in discoveredServers.Values)
+        foreach (DiscoveryResponse info in discoveredServers.Values)
         {
-            ServerResponse serverInfo = info;
+            DiscoveryResponse serverInfo = info;
             // instantiate the button prefab
             GameObject buttonObject = Instantiate(serverButtonPrefab, scrollViewContent, false);
             TMP_Text text = buttonObject.gameObject.GetComponentInChildren<TMP_Text>();
-            text.text = info.EndPoint.Address.ToString();
+            text.text = info.HostPlayerName + " (" + info.CurrentPlayers + "/2)";
 
             // Add a listener to the button to connect to the server
             Button button = buttonObject.GetComponent<Button>();
@@ -116,10 +116,10 @@ public class MenuManager : MonoBehaviour
         }
     }
 
-    private void Connect(ServerResponse info)
+    private void Connect(DiscoveryResponse info)
     {
         _networkDiscovery.StopDiscovery();
-        NetworkManager.singleton.StartClient(info.uri);
+        NetworkManager.singleton.StartClient(info.Uri);
     }
 
     public void FindServer()
@@ -128,10 +128,10 @@ public class MenuManager : MonoBehaviour
         _networkDiscovery.StartDiscovery();
     }
 
-    public void OnDiscoveredServer(ServerResponse info)
+    public void OnDiscoveredServer(DiscoveryResponse info)
     {
         // Note that you can check the versioning to decide if you can connect to the server or not using this method
-        discoveredServers[info.serverId] = info;
+        discoveredServers[info.ServerId] = info;
 
         if (NetworkManager.singleton == null)
             return;
