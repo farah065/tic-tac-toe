@@ -1,9 +1,10 @@
 using UnityEngine;
 using TMPro;
 using Mirror;
-using Mirror.Discovery;
 using System.Collections.Generic;
 using UnityEngine.UI;
+using System.Collections;
+using Mirror.Discovery;
 
 public class MenuManager : MonoBehaviour
 {
@@ -16,7 +17,7 @@ public class MenuManager : MonoBehaviour
     [SerializeField] private GameObject serverButtonPrefab;
 
     Vector2 scrollViewPos = Vector2.zero;
-    readonly Dictionary<long, DiscoveryResponse> discoveredServers = new Dictionary<long, DiscoveryResponse>();
+    readonly Dictionary<long, (DiscoveryResponse response, float lastSeenTime)> discoveredServers = new();
 
     private void Awake()
     {
@@ -70,6 +71,8 @@ public class MenuManager : MonoBehaviour
     {
         _mainMenuPanel.SetActive(false);
         _IPConnectionPanel.SetActive(true);
+        FindServer();
+        StartCoroutine(UpdateDiscoveryGUI());
     }
 
     public void Quit()
@@ -82,11 +85,6 @@ public class MenuManager : MonoBehaviour
         // set the network address to the IP address entered by the player
         _networkManager.networkAddress = _IPInputField.GetComponent<TMP_InputField>().text;
         _networkManager.StartClient();
-    }
-
-    void OnGUI()
-    {
-        
     }
 
     public void DrawDiscoveredServersGUI()
@@ -102,13 +100,13 @@ public class MenuManager : MonoBehaviour
             Destroy(child.gameObject);
         }
         // Create a button for each discovered server
-        foreach (DiscoveryResponse info in discoveredServers.Values)
+        foreach ((DiscoveryResponse, float) info in discoveredServers.Values)
         {
-            DiscoveryResponse serverInfo = info;
+            DiscoveryResponse serverInfo = info.Item1;
             // instantiate the button prefab
             GameObject buttonObject = Instantiate(serverButtonPrefab, scrollViewContent, false);
             TMP_Text text = buttonObject.gameObject.GetComponentInChildren<TMP_Text>();
-            text.text = info.HostPlayerName + " (" + info.CurrentPlayers + "/2)";
+            text.text = serverInfo.HostPlayerName + " (" + serverInfo.CurrentPlayers + "/2)";
 
             // Add a listener to the button to connect to the server
             Button button = buttonObject.GetComponent<Button>();
@@ -130,8 +128,8 @@ public class MenuManager : MonoBehaviour
 
     public void OnDiscoveredServer(DiscoveryResponse info)
     {
-        // Note that you can check the versioning to decide if you can connect to the server or not using this method
-        discoveredServers[info.ServerId] = info;
+        float currentTime = Time.time;
+        discoveredServers[info.ServerId] = (info, currentTime);
 
         if (NetworkManager.singleton == null)
             return;
@@ -140,8 +138,38 @@ public class MenuManager : MonoBehaviour
             DrawDiscoveredServersGUI();
     }
 
+    public void RemoveExpiredServers()
+    {
+        float currentTime = Time.time;
+        float timeout = 1.1f;
+
+        List<long> expiredKeys = new();
+        foreach (var kvp in discoveredServers)
+        {
+            Debug.Log("Current time: " + currentTime + ", kvp.Value.lastSeenTime: " + kvp.Value.lastSeenTime);
+            if (currentTime - kvp.Value.lastSeenTime > timeout)
+            {
+                expiredKeys.Add(kvp.Key);
+            }
+        }
+        foreach (long key in expiredKeys)
+        {
+            discoveredServers.Remove(key);
+        }
+    }
+
+    public IEnumerator UpdateDiscoveryGUI()
+    {
+        yield return new WaitForSeconds(1.0f);
+        RemoveExpiredServers();
+        DrawDiscoveredServersGUI();
+        StartCoroutine(UpdateDiscoveryGUI());
+    }
+
     public void BackToMenu()
     {
+        _networkDiscovery.StopDiscovery();
+        StopCoroutine(UpdateDiscoveryGUI());
         _IPConnectionPanel.SetActive(false);
         _mainMenuPanel.SetActive(true);
     }

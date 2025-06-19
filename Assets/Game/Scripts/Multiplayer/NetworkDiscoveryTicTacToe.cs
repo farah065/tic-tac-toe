@@ -64,14 +64,13 @@ public class NetworkDiscoveryTicTacToe : NetworkDiscoveryBase<DiscoveryRequest, 
 
     private string GetHostPlayerName()
     {
-        // Assuming host is the first connection/player
         foreach (NetworkConnectionToClient conn in NetworkServer.connections.Values)
         {
             if (conn.identity != null)
             {
-                var player = conn.identity.GetComponent<NetworkRoomPlayerTicTacToe>(); // your custom player class
+                NetworkRoomPlayerTicTacToe player = conn.identity.GetComponent<NetworkRoomPlayerTicTacToe>();
                 if (player != null)
-                    return player.PlayerName; // adjust field name as needed
+                    return player.PlayerName;
             }
         }
 

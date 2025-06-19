@@ -1574,7 +1574,7 @@ MonoBehaviour:
   enableActiveDiscovery: 1
   BroadcastAddress: 
   serverBroadcastListenPort: 47777
-  ActiveDiscoveryInterval: 3
+  ActiveDiscoveryInterval: 1
   transport: {fileID: 515591238}
   OnServerFound:
     m_PersistentCalls:
@@ -3858,7 +3858,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1179238264
 RectTransform:
   m_ObjectHideFlags: 0
