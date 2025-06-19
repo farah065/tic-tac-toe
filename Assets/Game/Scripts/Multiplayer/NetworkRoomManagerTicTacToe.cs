@@ -20,6 +20,7 @@ public class NetworkRoomManagerTicTacToe : NetworkRoomManager
         NetworkPlayerBehaviour player = gamePlayer.GetComponent<NetworkPlayerBehaviour>();
 
         player.PlayerId = room.index;
+        player.PlayerName = room.PlayerName;
 
         base.OnRoomServerSceneLoadedForPlayer(conn, roomPlayer, gamePlayer);
 
@@ -78,7 +79,7 @@ public class NetworkRoomManagerTicTacToe : NetworkRoomManager
     public override GameObject OnRoomServerCreateGamePlayer(NetworkConnectionToClient conn, GameObject roomPlayer)
     {
         GameObject gamePlayer = base.OnRoomServerCreateGamePlayer(conn, roomPlayer);
-        roomPlayer.SetActive(false);
+        roomPlayer.GetComponent<NetworkRoomPlayerTicTacToe>()?.CmdSetInactive();
         return gamePlayer;
     }
 

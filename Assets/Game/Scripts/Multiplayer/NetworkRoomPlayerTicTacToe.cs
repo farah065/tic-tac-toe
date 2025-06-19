@@ -47,4 +47,17 @@ public class NetworkRoomPlayerTicTacToe : NetworkRoomPlayer
         // update waiting text
         base.OnClientExitRoom();
     }
+
+    [Command(requiresAuthority = false)]
+    public void CmdSetInactive()
+    {
+        RpcSetInactive();
+    }
+
+    [ClientRpc]
+    public void RpcSetInactive()
+    {
+        Debug.Log("Setting player inactive: " + PlayerName);
+        gameObject.SetActive(false);
+    }
 }

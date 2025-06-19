@@ -7,9 +7,11 @@ using System.Collections;
 public class GameManager : NetworkBehaviour
 {
     [SyncVar] public int RoundNumber = 1;
-    [SyncVar] public int ScorePlayer1 = 0;
-    [SyncVar] public int ScorePlayer2 = 0;
+    //[SyncVar] public int ScorePlayer1 = 0;
+    //[SyncVar] public int ScorePlayer2 = 0;
     [SyncVar] public bool IsPlayer1Turn = true;
+    public NetworkPlayerBehaviour _player1;
+    public NetworkPlayerBehaviour _player2;
 
     [SyncVar] private string[] board = new string[9];
 
@@ -26,6 +28,45 @@ public class GameManager : NetworkBehaviour
         if (isServer)
         {
             ResetBoardServer();
+        }
+
+        CmdAssignPlayers();
+    }
+
+    [Command (requiresAuthority = false)]
+    public void CmdAssignPlayers()
+    {
+        RpcAssignPlayers();
+    }
+
+    [ClientRpc]
+    public void RpcAssignPlayers()
+    {
+        StartCoroutine(AssignPlayers());
+    }
+
+    public IEnumerator AssignPlayers()
+    {
+        yield return new WaitUntil(() => FindObjectsByType<NetworkPlayerBehaviour>(FindObjectsSortMode.InstanceID).Length >= 2);
+        NetworkPlayerBehaviour[] players = FindObjectsByType<NetworkPlayerBehaviour>(FindObjectsSortMode.InstanceID);
+
+        if (players.Length == 2)
+        {
+            if (players[0].PlayerId == 0)
+            {
+                _player1 = players[0];
+                _player2 = players[1];
+            }
+            else
+            {
+                _player1 = players[1];
+                _player2 = players[0];
+            }
+        }
+        else
+        {
+            Debug.LogError("There should be exactly two players in the scene.");
+            yield break;
         }
     }
 
@@ -71,30 +112,30 @@ public class GameManager : NetworkBehaviour
         {
             if (IsPlayer1Turn)
             {
-                ScorePlayer1++;
+                _player1.PlayerScore = _player1.PlayerScore + 1;
             }
             else
             {
-                ScorePlayer2++;
+                _player2.PlayerScore = _player2.PlayerScore + 1;
             }
 
             if (RoundNumber >= _maxRounds)
             {
-                string text = $"Game over, it's a tie!\nPlayer 1: {ScorePlayer1}, Player 2: {ScorePlayer2}";
-                if (ScorePlayer1 > ScorePlayer2)
+                string text = $"Game over, it's a tie!\n{_player1.PlayerName}: {_player1.PlayerScore}, {_player2.PlayerName}: {_player2.PlayerScore}";
+                if (_player1.PlayerScore > _player2.PlayerScore)
                 {
-                    text = $"Game over, player 1 wins!\nPlayer 1: {ScorePlayer1}, Player 2: {ScorePlayer2}";
+                    text = $"Game over, {_player1.PlayerName} wins!\n{_player1.PlayerName}: {_player1.PlayerScore}, {_player2.PlayerName}: {_player2.PlayerScore}";
                 }
-                else if (ScorePlayer2 > ScorePlayer1)
+                else if (_player2.PlayerScore > _player1.PlayerScore)
                 {
-                    text = $"Game over, player 2 wins!\nPlayer 1: {ScorePlayer1}, Player 2: {ScorePlayer2}";
+                    text = $"Game over, {_player2.PlayerName} wins!\n{_player1.PlayerName}: {_player1.PlayerScore}, {_player2.PlayerName}: {_player2.PlayerScore}";
                 }
 
                 ShowAnnouncement(text, 5f);
 
                 RoundNumber = 1;
-                ScorePlayer1 = 0;
-                ScorePlayer2 = 0;
+                _player1.PlayerScore = 0;
+                _player2.PlayerScore = 0;
                 ResetBoardServer();
                 RpcClearBoardUI();
             }
@@ -104,7 +145,7 @@ public class GameManager : NetworkBehaviour
                 ResetBoardServer();
                 RpcClearBoardUI();
 
-                string message = IsPlayer1Turn ? "Player 1 wins this round!" : "Player 2 wins this round!";
+                string message = IsPlayer1Turn ? $"{_player1.PlayerName} wins this round!" : $"{_player2.PlayerName} wins this round!";
                 ShowAnnouncement(message, 3f);
             }
         }
