@@ -1,5 +1,6 @@
 using UnityEngine;
 using Mirror;
+using System.Collections;
 
 public class NetworkRoomManagerTicTacToe : NetworkRoomManager
 {
@@ -18,25 +19,40 @@ public class NetworkRoomManagerTicTacToe : NetworkRoomManager
         NetworkPlayerBehaviour player = gamePlayer.GetComponent<NetworkPlayerBehaviour>();
 
         player.PlayerId = room.index;
-        Debug.Log("Player ID assigned: " + room.index);
 
         base.OnRoomServerSceneLoadedForPlayer(conn, roomPlayer, gamePlayer);
 
         return true;
     }
 
-    public override void OnRoomClientEnter()
+    public override void OnServerAddPlayer(NetworkConnectionToClient conn)
     {
-        base.OnRoomClientEnter();
+        base.OnServerAddPlayer(conn);
 
-        //NetworkRoomPlayerTicTacToe roomPlayer = NetworkClient.localPlayer.GetComponent<NetworkRoomPlayerTicTacToe>();
-        //if (roomPlayer.index == 0)
+        StartCoroutine(SetUpRoomPlayers(conn));
+    }
+
+    public IEnumerator SetUpRoomPlayers(NetworkConnectionToClient conn)
+    {
+        yield return new WaitUntil(() => conn.identity != null && conn.identity.GetComponent<NetworkRoomPlayerTicTacToe>() != null);
+        NetworkRoomPlayerTicTacToe roomPlayer = conn.identity.GetComponent<NetworkRoomPlayerTicTacToe>();
+        if (roomPlayer.index == 0)
+        {
+            roomPlayer.transform.GetChild(0).GetChild(0).transform.localPosition = new Vector3(-320, -132, 0);
+        }
+        else
+        {
+            roomPlayer.transform.GetChild(0).GetChild(0).transform.localPosition = new Vector3(320, -132, 0);
+        }
+
+        //LobbyUIManager lobbyUIManager = FindFirstObjectByType<LobbyUIManager>();
+        //if (lobbyUIManager != null)
         //{
-        //    roomPlayer.transform.position = new Vector3(-3, 0, 0);
+        //    lobbyUIManager.RpcSetWaitingTextVisibility(roomSlots.Count);
         //}
         //else
         //{
-        //    roomPlayer.transform.position = new Vector3(3, 0, 0);
+        //    Debug.LogError("LobbyUIManager not found in the scene.");
         //}
     }
 

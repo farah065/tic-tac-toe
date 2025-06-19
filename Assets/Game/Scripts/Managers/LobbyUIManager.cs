@@ -9,8 +9,7 @@ public class LobbyUIManager : NetworkBehaviour
 {
     private NetworkRoomPlayerTicTacToe _networkRoomPlayer;
     private NetworkRoomManagerTicTacToe _networkRoomManager;
-    [SerializeField] private List<TMP_Text> _playerNames;
-    [SerializeField] private List<TMP_Text> _playerReadyStates;
+    [SerializeField] private List<TMP_Text> _waitingText;
     [SerializeField] private Button _startButton;
 
     private IEnumerator Start()
@@ -35,8 +34,6 @@ public class LobbyUIManager : NetworkBehaviour
             Debug.LogError("NetworkRoomManagerTicTacToe instance not found.");
         }
 
-        UpdateLobbyUI();
-
         // if im not the host, disable the start button
         if (!isServer)
         {
@@ -44,51 +41,34 @@ public class LobbyUIManager : NetworkBehaviour
         }
     }
 
-    [Command(requiresAuthority = false)]
-    public void UpdateLobbyUI()
-    {
-        RpcUpdateLobbyUI();
-    }
+    //[Command(requiresAuthority=false)]
+    //public void CmdSetWaitingTextVisibility()
+    //{
+    //    int fullSlots = _networkRoomManager.roomSlots.Count;
+    //    RpcSetWaitingTextVisibility(fullSlots);
+    //}
 
-    [ClientRpc]
-    public void RpcUpdateLobbyUI()
-    {
-        StartCoroutine(UpdateLobbyUICoroutine());
-    }
-
-    private IEnumerator UpdateLobbyUICoroutine()
-    {
-        yield return new WaitUntil(() => _networkRoomManager != null && _networkRoomManager.roomSlots.Count > 0);
-        int index = 0;
-        foreach (NetworkRoomPlayerTicTacToe player in _networkRoomManager.roomSlots)
-        {
-            if (index < _playerNames.Count && index < _playerReadyStates.Count)
-            {
-                _playerNames[index].text = player.PlayerName;
-                _playerReadyStates[index].text = player.readyToBegin ? "READY" : "";
-            }
-            index++;
-        }
-    }
+    //[ClientRpc]
+    //public void RpcSetWaitingTextVisibility(int fullSlots)
+    //{
+        
+    //    for (int i = 0; i < _waitingText.Count; i++)
+    //    {
+    //        if (i + 1 > fullSlots)
+    //        {
+    //            _waitingText[i].gameObject.SetActive(true);
+    //        }
+    //        else
+    //        {
+    //            _waitingText[i].gameObject.SetActive(false);
+    //        }
+    //    }
+    //}
 
     public void OnReadyButtonClicked()
     {
-        StartCoroutine(OnReadyButtonClickedCoroutine());
+        _networkRoomPlayer.CmdChangeReadyState(!_networkRoomPlayer.readyToBegin);
         CmdMakeStartButtonInteractable();
-    }
-
-    public IEnumerator OnReadyButtonClickedCoroutine()
-    {
-        if (_networkRoomPlayer != null)
-        {
-            _networkRoomPlayer.CmdChangeReadyState(!_networkRoomPlayer.readyToBegin);
-            yield return new WaitForSeconds(0.1f);
-            UpdateLobbyUI();
-        }
-        else
-        {
-            Debug.LogError("NetworkRoomPlayerTicTacToe is not assigned.");
-        }
     }
 
     [Command(requiresAuthority=false)]
