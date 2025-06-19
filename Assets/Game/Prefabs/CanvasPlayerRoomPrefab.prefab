@@ -145,8 +145,8 @@ MonoBehaviour:
   readyToBegin: 0
   index: 0
   PlayerName: 
-  playerNameText: {fileID: 697087257264916773}
-  playerReadyText: {fileID: 536132785274586406}
+  _playerNameText: {fileID: 697087257264916773}
+  _playerReadyText: {fileID: 536132785274586406}
 --- !u!1 &3654615298813821012
 GameObject:
   m_ObjectHideFlags: 0

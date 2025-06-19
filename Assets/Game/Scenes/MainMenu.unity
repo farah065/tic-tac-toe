@@ -5464,8 +5464,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _mainMenuPanel: {fileID: 1507333193}
   _IPConnectionPanel: {fileID: 1226313942}
-  scrollViewContent: {fileID: 1807755284}
-  serverButtonPrefab: {fileID: 976630554816823968, guid: 9bbfd48b97432c34681130d7f4d0369e, type: 3}
+  _scrollViewContent: {fileID: 1807755284}
+  _serverButtonPrefab: {fileID: 976630554816823968, guid: 9bbfd48b97432c34681130d7f4d0369e, type: 3}
 --- !u!4 &1790984203
 Transform:
   m_ObjectHideFlags: 0

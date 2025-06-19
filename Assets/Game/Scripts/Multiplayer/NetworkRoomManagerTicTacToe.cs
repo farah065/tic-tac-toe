@@ -5,7 +5,6 @@ using UnityEngine.SceneManagement;
 
 public class NetworkRoomManagerTicTacToe : NetworkRoomManager
 {
-    private static NetworkRoomManagerTicTacToe instance;
     public static NetworkRoomManagerTicTacToe Instance {
         get
         {
@@ -13,26 +12,7 @@ public class NetworkRoomManagerTicTacToe : NetworkRoomManager
             return instance = NetworkManager.singleton as NetworkRoomManagerTicTacToe;
         }
     }
-
-    public override bool OnRoomServerSceneLoadedForPlayer(NetworkConnectionToClient conn, GameObject roomPlayer, GameObject gamePlayer)
-    {
-        NetworkRoomPlayerTicTacToe room = roomPlayer.GetComponent<NetworkRoomPlayerTicTacToe>();
-        NetworkPlayerBehaviour player = gamePlayer.GetComponent<NetworkPlayerBehaviour>();
-
-        player.PlayerId = room.index;
-        player.PlayerName = room.PlayerName;
-
-        base.OnRoomServerSceneLoadedForPlayer(conn, roomPlayer, gamePlayer);
-
-        return true;
-    }
-
-    public override void OnServerAddPlayer(NetworkConnectionToClient conn)
-    {
-        base.OnServerAddPlayer(conn);
-
-        StartCoroutine(SetUpRoomPlayers(conn));
-    }
+    private static NetworkRoomManagerTicTacToe instance;
 
     public IEnumerator SetUpRoomPlayers(NetworkConnectionToClient conn)
     {
@@ -56,6 +36,26 @@ public class NetworkRoomManagerTicTacToe : NetworkRoomManager
         {
             Debug.LogError("LobbyUIManager not found in the scene.");
         }
+    }
+
+    public override bool OnRoomServerSceneLoadedForPlayer(NetworkConnectionToClient conn, GameObject roomPlayer, GameObject gamePlayer)
+    {
+        NetworkRoomPlayerTicTacToe room = roomPlayer.GetComponent<NetworkRoomPlayerTicTacToe>();
+        NetworkPlayerBehaviour player = gamePlayer.GetComponent<NetworkPlayerBehaviour>();
+
+        player.PlayerId = room.index;
+        player.PlayerName = room.PlayerName;
+
+        base.OnRoomServerSceneLoadedForPlayer(conn, roomPlayer, gamePlayer);
+
+        return true;
+    }
+
+    public override void OnServerAddPlayer(NetworkConnectionToClient conn)
+    {
+        base.OnServerAddPlayer(conn);
+
+        StartCoroutine(SetUpRoomPlayers(conn));
     }
 
     public override void OnRoomClientExit()

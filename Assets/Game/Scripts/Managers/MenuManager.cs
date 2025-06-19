@@ -4,20 +4,19 @@ using Mirror;
 using System.Collections.Generic;
 using UnityEngine.UI;
 using System.Collections;
-using Mirror.Discovery;
 
 public class MenuManager : MonoBehaviour
 {
+    [SerializeField] private GameObject _mainMenuPanel;
+    [SerializeField] private GameObject _IPConnectionPanel;
+    [SerializeField] private Transform _scrollViewContent;
+    [SerializeField] private GameObject _serverButtonPrefab;
+
     private NetworkRoomManagerTicTacToe _networkManager;
     private NetworkDiscoveryTicTacToe _networkDiscovery;
     private GameObject _IPInputField;
-    [SerializeField] private GameObject _mainMenuPanel;
-    [SerializeField] private GameObject _IPConnectionPanel;
-    [SerializeField] private Transform scrollViewContent;
-    [SerializeField] private GameObject serverButtonPrefab;
+    private Dictionary<long, (DiscoveryResponse response, float lastSeenTime)> _discoveredServers = new();
 
-    Vector2 scrollViewPos = Vector2.zero;
-    readonly Dictionary<long, (DiscoveryResponse response, float lastSeenTime)> discoveredServers = new();
 
     private void Awake()
     {
@@ -62,7 +61,7 @@ public class MenuManager : MonoBehaviour
 
     public void Host()
     {
-        discoveredServers.Clear();
+        _discoveredServers.Clear();
         _networkManager.StartHost();
         _networkDiscovery.AdvertiseServer();
     }
@@ -87,24 +86,44 @@ public class MenuManager : MonoBehaviour
         _networkManager.StartClient();
     }
 
-    public void DrawDiscoveredServersGUI()
+    public void BackToMenu()
     {
-        if (scrollViewContent == null)
+        _networkDiscovery.StopDiscovery();
+        StopCoroutine(UpdateDiscoveryGUI());
+        _IPConnectionPanel.SetActive(false);
+        _mainMenuPanel.SetActive(true);
+    }
+
+    public void OnDiscoveredServer(DiscoveryResponse info)
+    {
+        float currentTime = Time.time;
+        _discoveredServers[info.ServerId] = (info, currentTime);
+
+        if (NetworkManager.singleton == null)
+            return;
+
+        if (!NetworkClient.isConnected && !NetworkServer.active && !NetworkClient.active)
+            DrawDiscoveredServersGUI();
+    }
+
+    private void DrawDiscoveredServersGUI()
+    {
+        if (_scrollViewContent == null)
         {
             Debug.LogError("Scroll View Content is not assigned in the inspector.");
             return;
         }
         // Clear the previous content
-        foreach (Transform child in scrollViewContent)
+        foreach (Transform child in _scrollViewContent)
         {
             Destroy(child.gameObject);
         }
         // Create a button for each discovered server
-        foreach ((DiscoveryResponse, float) info in discoveredServers.Values)
+        foreach ((DiscoveryResponse, float) info in _discoveredServers.Values)
         {
             DiscoveryResponse serverInfo = info.Item1;
             // instantiate the button prefab
-            GameObject buttonObject = Instantiate(serverButtonPrefab, scrollViewContent, false);
+            GameObject buttonObject = Instantiate(_serverButtonPrefab, _scrollViewContent, false);
             TMP_Text text = buttonObject.gameObject.GetComponentInChildren<TMP_Text>();
             text.text = serverInfo.HostPlayerName + " (" + serverInfo.CurrentPlayers + "/2)";
 
@@ -120,33 +139,20 @@ public class MenuManager : MonoBehaviour
         NetworkManager.singleton.StartClient(info.Uri);
     }
 
-    public void FindServer()
+    private void FindServer()
     {
-        discoveredServers.Clear();
+        _discoveredServers.Clear();
         _networkDiscovery.StartDiscovery();
     }
 
-    public void OnDiscoveredServer(DiscoveryResponse info)
-    {
-        float currentTime = Time.time;
-        discoveredServers[info.ServerId] = (info, currentTime);
-
-        if (NetworkManager.singleton == null)
-            return;
-
-        if (!NetworkClient.isConnected && !NetworkServer.active && !NetworkClient.active)
-            DrawDiscoveredServersGUI();
-    }
-
-    public void RemoveExpiredServers()
+    private void RemoveExpiredServers()
     {
         float currentTime = Time.time;
         float timeout = 1.1f;
 
         List<long> expiredKeys = new();
-        foreach (var kvp in discoveredServers)
+        foreach (var kvp in _discoveredServers)
         {
-            Debug.Log("Current time: " + currentTime + ", kvp.Value.lastSeenTime: " + kvp.Value.lastSeenTime);
             if (currentTime - kvp.Value.lastSeenTime > timeout)
             {
                 expiredKeys.Add(kvp.Key);
@@ -154,23 +160,15 @@ public class MenuManager : MonoBehaviour
         }
         foreach (long key in expiredKeys)
         {
-            discoveredServers.Remove(key);
+            _discoveredServers.Remove(key);
         }
     }
 
-    public IEnumerator UpdateDiscoveryGUI()
+    private IEnumerator UpdateDiscoveryGUI()
     {
         yield return new WaitForSeconds(1.0f);
         RemoveExpiredServers();
         DrawDiscoveredServersGUI();
         StartCoroutine(UpdateDiscoveryGUI());
-    }
-
-    public void BackToMenu()
-    {
-        _networkDiscovery.StopDiscovery();
-        StopCoroutine(UpdateDiscoveryGUI());
-        _IPConnectionPanel.SetActive(false);
-        _mainMenuPanel.SetActive(true);
     }
 }

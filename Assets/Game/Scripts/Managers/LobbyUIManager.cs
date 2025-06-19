@@ -7,10 +7,11 @@ using UnityEngine.UI;
 
 public class LobbyUIManager : NetworkBehaviour
 {
-    private NetworkRoomPlayerTicTacToe _networkRoomPlayer;
-    private NetworkRoomManagerTicTacToe _networkRoomManager;
     [SerializeField] private List<TMP_Text> _waitingText;
     [SerializeField] private Button _startButton;
+
+    private NetworkRoomPlayerTicTacToe _networkRoomPlayer;
+    private NetworkRoomManagerTicTacToe _networkRoomManager;
 
     private IEnumerator Start()
     {
@@ -58,32 +59,6 @@ public class LobbyUIManager : NetworkBehaviour
         }
     }
 
-    public void OnReadyButtonClicked()
-    {
-        _networkRoomPlayer.CmdChangeReadyState(!_networkRoomPlayer.readyToBegin);
-        CmdMakeStartButtonInteractable();
-    }
-
-    [Command(requiresAuthority=false)]
-    public void CmdMakeStartButtonInteractable()
-    {
-        bool isInteractable = _networkRoomManager.roomSlots.Count > 1 && _networkRoomManager.allPlayersReady;
-        RpcMakeStartButtonInteractable(isInteractable);
-    }
-
-    [ClientRpc]
-    public void RpcMakeStartButtonInteractable(bool isInteractable)
-    {
-        if (_startButton != null)
-        {
-            _startButton.interactable = isInteractable;
-        }
-        else
-        {
-            Debug.LogError("Start Button is not assigned in the inspector.");
-        }
-    }
-
     // go to the game scene
     public void StartGame()
     {
@@ -114,6 +89,32 @@ public class LobbyUIManager : NetworkBehaviour
         else
         {
             Debug.LogError("NetworkRoomPlayerTicTacToe is not assigned.");
+        }
+    }
+
+    public void OnReadyButtonClicked()
+    {
+        _networkRoomPlayer.CmdChangeReadyState(!_networkRoomPlayer.readyToBegin);
+        CmdMakeStartButtonInteractable();
+    }
+
+    [Command(requiresAuthority=false)]
+    private void CmdMakeStartButtonInteractable()
+    {
+        bool isInteractable = _networkRoomManager.roomSlots.Count > 1 && _networkRoomManager.allPlayersReady;
+        RpcMakeStartButtonInteractable(isInteractable);
+    }
+
+    [ClientRpc]
+    private void RpcMakeStartButtonInteractable(bool isInteractable)
+    {
+        if (_startButton != null)
+        {
+            _startButton.interactable = isInteractable;
+        }
+        else
+        {
+            Debug.LogError("Start Button is not assigned in the inspector.");
         }
     }
 }

@@ -4,11 +4,13 @@ using UnityEngine.UI;
 
 public class NameChangeManager : MonoBehaviour
 {
-    public static string DisplayName { get; private set; }
-    private const string _playerPrefsNameKey = "PlayerName";
     [SerializeField] private GameObject _nameEditPanel;
     [SerializeField] private TMP_Text _nameText;
     [SerializeField] private GameObject _nameEditButton;
+
+    public static string DisplayName { get; private set; }
+
+    private const string _playerPrefsNameKey = "PlayerName";
 
     private void Awake()
     {

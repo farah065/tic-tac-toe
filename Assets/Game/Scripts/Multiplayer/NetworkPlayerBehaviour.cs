@@ -4,12 +4,12 @@ using TMPro;
 
 public class NetworkPlayerBehaviour : NetworkBehaviour
 {
-    [SyncVar]
-    public int PlayerId;
     [SyncVar(hook = nameof(PlayerNameChanged))]
     public string PlayerName;
     [SyncVar(hook = nameof(PlayerScoreChanged))]
     public int PlayerScore;
+    [SyncVar] public int PlayerId;
+
     [SerializeField] private TMP_Text _playerNameText;
     [SerializeField] private TMP_Text _playerScoreText;
 

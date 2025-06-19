@@ -1,4 +1,3 @@
-using UnityEngine;
 using Mirror;
 using Mirror.Discovery;
 using System.Net;

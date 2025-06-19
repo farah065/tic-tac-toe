@@ -8,8 +8,9 @@ public class NetworkRoomPlayerTicTacToe : NetworkRoomPlayer
     // ready state already exists in NetworkRoomPlayer.readyToBegin
     [SyncVar(hook = nameof(PlayerNameChanged))]
     public string PlayerName;
-    [SerializeField] public TMP_Text playerNameText;
-    [SerializeField] private TMP_Text playerReadyText;
+
+    [SerializeField] private TMP_Text _playerNameText;
+    [SerializeField] private TMP_Text _playerReadyText;
 
     // set PlayerName on the server
     [Command]
@@ -18,11 +19,10 @@ public class NetworkRoomPlayerTicTacToe : NetworkRoomPlayer
         RpcSetPlayerName(name);
     }
 
-    [ClientRpc]
-    public void RpcSetPlayerName(string name)
+    [Command(requiresAuthority = false)]
+    public void CmdSetInactive()
     {
-        PlayerName = name;
-        playerNameText.text = name;
+        RpcSetInactive();
     }
 
     // set PlayerName when the player joins
@@ -34,12 +34,12 @@ public class NetworkRoomPlayerTicTacToe : NetworkRoomPlayer
 
     public void PlayerNameChanged(string oldPlayerName, string newPlayerName)
     {
-        playerNameText.text = newPlayerName;
+        _playerNameText.text = newPlayerName;
     }
 
     public override void ReadyStateChanged(bool oldReadyState, bool newReadyState)
     {
-        playerReadyText.text = newReadyState ? "Ready" : "";
+        _playerReadyText.text = newReadyState ? "Ready" : "";
     }
 
     public override void OnClientExitRoom()
@@ -48,16 +48,16 @@ public class NetworkRoomPlayerTicTacToe : NetworkRoomPlayer
         base.OnClientExitRoom();
     }
 
-    [Command(requiresAuthority = false)]
-    public void CmdSetInactive()
+    [ClientRpc]
+    private void RpcSetPlayerName(string name)
     {
-        RpcSetInactive();
+        PlayerName = name;
+        _playerNameText.text = name;
     }
 
     [ClientRpc]
-    public void RpcSetInactive()
+    private void RpcSetInactive()
     {
-        Debug.Log("Setting player inactive: " + PlayerName);
         gameObject.SetActive(false);
     }
 }

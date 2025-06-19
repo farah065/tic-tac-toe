@@ -6,20 +6,16 @@ using System.Collections;
 
 public class GameManager : NetworkBehaviour
 {
-    [SyncVar] public int RoundNumber = 1;
-    //[SyncVar] public int ScorePlayer1 = 0;
-    //[SyncVar] public int ScorePlayer2 = 0;
-    [SyncVar] public bool IsPlayer1Turn = true;
-    public NetworkPlayerBehaviour _player1;
-    public NetworkPlayerBehaviour _player2;
+    public NetworkPlayerBehaviour Player1;
+    public NetworkPlayerBehaviour Player2;
 
-    [SyncVar] private string[] board = new string[9];
-
-    private int _maxRounds = 3;
-
-    [SerializeField] private Button[] Cells;
-
+    [SerializeField] private Button[] _cells;
     [SerializeField] private GameObject _announcement;
+
+    [SyncVar] private int _roundNumber = 1;
+    [SyncVar] private bool _isPlayer1Turn = true;
+    [SyncVar] private string[] board = new string[9];
+    private int _maxRounds = 3;
 
     private void Start()
     {
@@ -33,19 +29,41 @@ public class GameManager : NetworkBehaviour
         CmdAssignPlayers();
     }
 
+    // leave the room
+    public void LeaveGame()
+    {
+        NetworkRoomManagerTicTacToe _networkRoomManager = NetworkRoomManagerTicTacToe.Instance;
+        NetworkPlayerBehaviour _networkPlayer = NetworkClient.localPlayer.GetComponent<NetworkPlayerBehaviour>();
+        if (_networkPlayer != null)
+        {
+            if (isServer)
+            {
+                _networkRoomManager.StopHost();
+            }
+            else
+            {
+                _networkRoomManager.StopClient();
+            }
+        }
+        else
+        {
+            Debug.LogError("NetworkRoomPlayerTicTacToe is not assigned.");
+        }
+    }
+
     [Command (requiresAuthority = false)]
-    public void CmdAssignPlayers()
+    private void CmdAssignPlayers()
     {
         RpcAssignPlayers();
     }
 
     [ClientRpc]
-    public void RpcAssignPlayers()
+    private void RpcAssignPlayers()
     {
         StartCoroutine(AssignPlayers());
     }
 
-    public IEnumerator AssignPlayers()
+    private IEnumerator AssignPlayers()
     {
         yield return new WaitUntil(() => FindObjectsByType<NetworkPlayerBehaviour>(FindObjectsSortMode.InstanceID).Length >= 2);
         NetworkPlayerBehaviour[] players = FindObjectsByType<NetworkPlayerBehaviour>(FindObjectsSortMode.InstanceID);
@@ -54,13 +72,13 @@ public class GameManager : NetworkBehaviour
         {
             if (players[0].PlayerId == 0)
             {
-                _player1 = players[0];
-                _player2 = players[1];
+                Player1 = players[0];
+                Player2 = players[1];
             }
             else
             {
-                _player1 = players[1];
-                _player2 = players[0];
+                Player1 = players[1];
+                Player2 = players[0];
             }
         }
         else
@@ -72,10 +90,10 @@ public class GameManager : NetworkBehaviour
 
     private void AssignButtonListeners()
     {
-        for (int i = 0; i < Cells.Length; i++)
+        for (int i = 0; i < _cells.Length; i++)
         {
             int index = i;
-            Cells[i].onClick.AddListener(() => OnCellClick(index));
+            _cells[i].onClick.AddListener(() => OnCellClick(index));
         }
     }
 
@@ -91,7 +109,7 @@ public class GameManager : NetworkBehaviour
 
         NetworkPlayerBehaviour player = sender.identity.GetComponent<NetworkPlayerBehaviour>();
         if (player != null) {
-            if ((IsPlayer1Turn && player.PlayerId != 0) || (!IsPlayer1Turn && player.PlayerId != 1))
+            if ((_isPlayer1Turn && player.PlayerId != 0) || (!_isPlayer1Turn && player.PlayerId != 1))
             {
                 Debug.Log("Player " + player.PlayerId + " tried to play out of turn.");
                 return;
@@ -103,68 +121,68 @@ public class GameManager : NetworkBehaviour
             return;
         }
 
-        string mark = IsPlayer1Turn ? "X" : "O";
+        string mark = _isPlayer1Turn ? "X" : "O";
         board[index] = mark;
 
         RpcUpdateCell(index, mark);
 
         if (CheckWin(mark))
         {
-            if (IsPlayer1Turn)
+            if (_isPlayer1Turn)
             {
-                _player1.PlayerScore = _player1.PlayerScore + 1;
+                Player1.PlayerScore = Player1.PlayerScore + 1;
             }
             else
             {
-                _player2.PlayerScore = _player2.PlayerScore + 1;
+                Player2.PlayerScore = Player2.PlayerScore + 1;
             }
 
-            if (RoundNumber >= _maxRounds)
+            if (_roundNumber >= _maxRounds)
             {
-                string text = $"Game over, it's a tie!\n{_player1.PlayerName}: {_player1.PlayerScore}, {_player2.PlayerName}: {_player2.PlayerScore}";
-                if (_player1.PlayerScore > _player2.PlayerScore)
+                string text = $"Game over, it's a tie!\n{Player1.PlayerName}: {Player1.PlayerScore}, {Player2.PlayerName}: {Player2.PlayerScore}";
+                if (Player1.PlayerScore > Player2.PlayerScore)
                 {
-                    text = $"Game over, {_player1.PlayerName} wins!\n{_player1.PlayerName}: {_player1.PlayerScore}, {_player2.PlayerName}: {_player2.PlayerScore}";
+                    text = $"Game over, {Player1.PlayerName} wins!\n{Player1.PlayerName}: {Player1.PlayerScore}, {Player2.PlayerName}: {Player2.PlayerScore}";
                 }
-                else if (_player2.PlayerScore > _player1.PlayerScore)
+                else if (Player2.PlayerScore > Player1.PlayerScore)
                 {
-                    text = $"Game over, {_player2.PlayerName} wins!\n{_player1.PlayerName}: {_player1.PlayerScore}, {_player2.PlayerName}: {_player2.PlayerScore}";
+                    text = $"Game over, {Player2.PlayerName} wins!\n{Player1.PlayerName}: {Player1.PlayerScore}, {Player2.PlayerName}: {Player2.PlayerScore}";
                 }
 
-                ShowAnnouncement(text, 5f);
+                RpcShowAnnouncement(text, 5f);
 
-                RoundNumber = 1;
-                _player1.PlayerScore = 0;
-                _player2.PlayerScore = 0;
+                _roundNumber = 1;
+                Player1.PlayerScore = 0;
+                Player2.PlayerScore = 0;
                 ResetBoardServer();
                 RpcClearBoardUI();
             }
             else
             {
-                RoundNumber++;
+                _roundNumber++;
                 ResetBoardServer();
                 RpcClearBoardUI();
 
-                string message = IsPlayer1Turn ? $"{_player1.PlayerName} wins this round!" : $"{_player2.PlayerName} wins this round!";
-                ShowAnnouncement(message, 3f);
+                string message = _isPlayer1Turn ? $"{Player1.PlayerName} wins this round!" : $"{Player2.PlayerName} wins this round!";
+                RpcShowAnnouncement(message, 3f);
             }
         }
         else if (CheckForTie())
         {
-            RoundNumber++;
+            _roundNumber++;
             ResetBoardServer();
             RpcClearBoardUI();
 
-            ShowAnnouncement("It's a tie! Starting next round...", 3f);
+            RpcShowAnnouncement("It's a tie! Starting next round...", 3f);
         }
         else
         {
-            IsPlayer1Turn = !IsPlayer1Turn;
+            _isPlayer1Turn = !_isPlayer1Turn;
         }
     }
 
     [ClientRpc]
-    private void ShowAnnouncement(string message, float duration)
+    private void RpcShowAnnouncement(string message, float duration)
     {
         _announcement.SetActive(true);
         TMP_Text announcementText = _announcement.GetComponentInChildren<TMP_Text>();
@@ -181,27 +199,9 @@ public class GameManager : NetworkBehaviour
     [ClientRpc]
     private void RpcUpdateCell(int index, string mark)
     {
-        if (index < 0 || index >= Cells.Length) { return; }
-        TMP_Text text = Cells[index].GetComponentInChildren<TMP_Text>();
+        if (index < 0 || index >= _cells.Length) { return; }
+        TMP_Text text = _cells[index].GetComponentInChildren<TMP_Text>();
         text.text = mark;
-    }
-
-    [ClientRpc]
-    private void RpcClearBoardUI()
-    {
-        foreach (Button cell in Cells)
-        {
-            cell.GetComponentInChildren<TMP_Text>().text = "";
-        }
-    }
-
-    [Server]
-    private void ResetBoardServer()
-    {
-        for (int i = 0; i < 9; i++)
-        {
-            board[i] = "";
-        }
     }
 
     [Server]
@@ -240,25 +240,21 @@ public class GameManager : NetworkBehaviour
         return true;
     }
 
-    // leave the room
-    public void LeaveGame()
+    [Server]
+    private void ResetBoardServer()
     {
-        NetworkRoomManagerTicTacToe _networkRoomManager = NetworkRoomManagerTicTacToe.Instance;
-        NetworkPlayerBehaviour _networkPlayer = NetworkClient.localPlayer.GetComponent<NetworkPlayerBehaviour>();
-        if (_networkPlayer != null)
+        for (int i = 0; i < 9; i++)
         {
-            if (isServer)
-            {
-                _networkRoomManager.StopHost();
-            }
-            else
-            {
-                _networkRoomManager.StopClient();
-            }
+            board[i] = "";
         }
-        else
+    }
+
+    [ClientRpc]
+    private void RpcClearBoardUI()
+    {
+        foreach (Button cell in _cells)
         {
-            Debug.LogError("NetworkRoomPlayerTicTacToe is not assigned.");
+            cell.GetComponentInChildren<TMP_Text>().text = "";
         }
     }
 }
