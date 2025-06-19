@@ -1,6 +1,7 @@
 using UnityEngine;
 using Mirror;
 using System.Collections;
+using UnityEngine.SceneManagement;
 
 public class NetworkRoomManagerTicTacToe : NetworkRoomManager
 {
@@ -58,16 +59,27 @@ public class NetworkRoomManagerTicTacToe : NetworkRoomManager
 
     public override void OnRoomClientExit()
     {
-        LobbyUIManager lobbyUIManager = FindFirstObjectByType<LobbyUIManager>();
-        if (lobbyUIManager != null)
+        // if active scene is the lobby
+        if (SceneManager.GetActiveScene().name == "Lobby")
         {
-            lobbyUIManager.RpcSetWaitingTextVisibility(roomSlots.Count);
-        }
-        else
-        {
-            Debug.LogError("LobbyUIManager not found in the scene.");
+            LobbyUIManager lobbyUIManager = FindFirstObjectByType<LobbyUIManager>();
+            if (lobbyUIManager != null)
+            {
+                lobbyUIManager.RpcSetWaitingTextVisibility(roomSlots.Count);
+            }
+            else
+            {
+                Debug.LogError("LobbyUIManager not found in the scene.");
+            }
         }
         base.OnRoomClientExit();
+    }
+
+    public override GameObject OnRoomServerCreateGamePlayer(NetworkConnectionToClient conn, GameObject roomPlayer)
+    {
+        GameObject gamePlayer = base.OnRoomServerCreateGamePlayer(conn, roomPlayer);
+        roomPlayer.SetActive(false);
+        return gamePlayer;
     }
 
     // prevent the default behavior of starting the game when all players are ready
