@@ -41,29 +41,22 @@ public class LobbyUIManager : NetworkBehaviour
         }
     }
 
-    //[Command(requiresAuthority=false)]
-    //public void CmdSetWaitingTextVisibility()
-    //{
-    //    int fullSlots = _networkRoomManager.roomSlots.Count;
-    //    RpcSetWaitingTextVisibility(fullSlots);
-    //}
+    [ClientRpc]
+    public void RpcSetWaitingTextVisibility(int fullSlots)
+    {
 
-    //[ClientRpc]
-    //public void RpcSetWaitingTextVisibility(int fullSlots)
-    //{
-        
-    //    for (int i = 0; i < _waitingText.Count; i++)
-    //    {
-    //        if (i + 1 > fullSlots)
-    //        {
-    //            _waitingText[i].gameObject.SetActive(true);
-    //        }
-    //        else
-    //        {
-    //            _waitingText[i].gameObject.SetActive(false);
-    //        }
-    //    }
-    //}
+        for (int i = 0; i < _waitingText.Count; i++)
+        {
+            if (i + 1 > fullSlots)
+            {
+                _waitingText[i].gameObject.SetActive(true);
+            }
+            else
+            {
+                _waitingText[i].gameObject.SetActive(false);
+            }
+        }
+    }
 
     public void OnReadyButtonClicked()
     {

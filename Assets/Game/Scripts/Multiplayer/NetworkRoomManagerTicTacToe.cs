@@ -45,15 +45,29 @@ public class NetworkRoomManagerTicTacToe : NetworkRoomManager
             roomPlayer.transform.GetChild(0).GetChild(0).transform.localPosition = new Vector3(320, -132, 0);
         }
 
-        //LobbyUIManager lobbyUIManager = FindFirstObjectByType<LobbyUIManager>();
-        //if (lobbyUIManager != null)
-        //{
-        //    lobbyUIManager.RpcSetWaitingTextVisibility(roomSlots.Count);
-        //}
-        //else
-        //{
-        //    Debug.LogError("LobbyUIManager not found in the scene.");
-        //}
+        LobbyUIManager lobbyUIManager = FindFirstObjectByType<LobbyUIManager>();
+        if (lobbyUIManager != null)
+        {
+            lobbyUIManager.RpcSetWaitingTextVisibility(roomSlots.Count);
+        }
+        else
+        {
+            Debug.LogError("LobbyUIManager not found in the scene.");
+        }
+    }
+
+    public override void OnRoomClientExit()
+    {
+        LobbyUIManager lobbyUIManager = FindFirstObjectByType<LobbyUIManager>();
+        if (lobbyUIManager != null)
+        {
+            lobbyUIManager.RpcSetWaitingTextVisibility(roomSlots.Count);
+        }
+        else
+        {
+            Debug.LogError("LobbyUIManager not found in the scene.");
+        }
+        base.OnRoomClientExit();
     }
 
     // prevent the default behavior of starting the game when all players are ready
